@@ -36,11 +36,12 @@ WITH latest AS (
 ),
 
 incoming AS (
-    SELECT latest.* EXCLUDE (verwijderd)
+    SELECT
+        latest.* EXCLUDE (verwijderd, kamerstukdossier_id),
+        CASE WHEN dossier.id IS NOT NULL THEN latest.kamerstukdossier_id END AS kamerstukdossier_id
     FROM latest
     LEFT JOIN {{ ref('kamerstukdossier') }} AS dossier ON latest.kamerstukdossier_id = dossier.id
     WHERE NOT latest.verwijderd
-      AND (latest.kamerstukdossier_id IS NULL OR dossier.id IS NOT NULL)
       {% if is_incremental() %}
       AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
       {% endif %}

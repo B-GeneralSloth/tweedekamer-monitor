@@ -39,7 +39,7 @@ latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.vergadering_id,
+        CASE WHEN meeting.id IS NOT NULL THEN latest.vergadering_id END AS vergadering_id,
         latest.soort,
         latest.status,
         latest.content_type,
@@ -48,7 +48,7 @@ incoming AS (
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('vergadering') }} AS meeting
+    LEFT JOIN {{ ref('vergadering') }} AS meeting
         ON latest.vergadering_id = meeting.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}

@@ -30,7 +30,7 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.fractie_zetel_id,
+        CASE WHEN seat.id IS NOT NULL THEN latest.fractie_zetel_id END AS fractie_zetel_id,
         latest.functie,
         latest.van_parsed.datum AS van,
         latest.van_ruw,
@@ -41,7 +41,7 @@ incoming AS (
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('fractie_zetel') }} AS seat
+    LEFT JOIN {{ ref('fractie_zetel') }} AS seat
         ON latest.fractie_zetel_id = seat.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}

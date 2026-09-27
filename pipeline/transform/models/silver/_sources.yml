@@ -25,6 +25,16 @@ sources:
         description: >
           Ruwe feed-rijen voor de entiteitsoort Agendapunt, met de verwijzing naar
           de bijbehorende Activiteit.
+      - name: besluit
+        description: Ruwe feed-rijen voor de entiteitsoort Besluit.
+      - name: besluit__zaak
+        description: Dlt-childrijen voor de herhaalbare Besluit-Zaak-relatie.
+      - name: besluit__atom_links
+        description: Door dlt afgesplitste Atom-links van Besluiten.
+      - name: stemming
+        description: Ruwe feed-rijen voor de entiteitsoort Stemming.
+      - name: stemming__atom_links
+        description: Door dlt afgesplitste Atom-links van Stemmingen.
       - name: kamerstukdossier
         description: Ruwe feed-rijen voor de entiteitsoort Kamerstukdossier.
       - name: zaak
@@ -41,6 +51,46 @@ sources:
         description: >
           Ruwe feed-rijen voor de entiteitsoort ZaakActor, met optionele
           verwijzingen naar Zaak, Persoon, Fractie en Commissie.
+      - name: document
+        description: Ruwe feed-rijen voor de entiteitsoort Document.
+      - name: document__bron_document
+        description: Dlt-childrijen voor de Document-BronDocument-relatie.
+      - name: document__zaak
+        description: Dlt-childrijen voor de Document-Zaak-relatie.
+      - name: document__activiteit
+        description: Dlt-childrijen voor de Document-Activiteit-relatie.
+      - name: document__agendapunt
+        description: Dlt-childrijen voor de Document-Agendapunt-relatie.
+      - name: document__atom_links
+        description: Door dlt afgesplitste Atom-links van Documenten.
+      - name: document_versie
+        description: Ruwe feed-rijen voor de entiteitsoort DocumentVersie.
+      - name: document_versie__atom_links
+        description: Door dlt afgesplitste Atom-links van DocumentVersies.
+      - name: document_publicatie
+        description: Ruwe feed-rijen voor de entiteitsoort DocumentPublicatie.
+      - name: document_publicatie__atom_links
+        description: Door dlt afgesplitste Atom-links van DocumentPublicaties.
+      - name: document_publicatie_metadata
+        description: Ruwe feed-rijen voor de entiteitsoort DocumentPublicatieMetadata.
+      - name: document_publicatie_metadata__atom_links
+        description: Door dlt afgesplitste Atom-links van publicatiemetadata.
+      - name: document_actor
+        description: Ruwe feed-rijen voor de entiteitsoort DocumentActor.
+      - name: toezegging
+        description: Ruwe feed-rijen voor de entiteitsoort Toezegging.
+      - name: toezegging__atom_links
+        description: Door dlt afgesplitste Atom-pagineringlinks van Toezeggingen.
+      - name: toezegging__is_aanvulling_op
+        description: Dlt-childrijen voor de Toezegging-IsAanvullingOp-relatie.
+      - name: toezegging__is_herhaling_van
+        description: Dlt-childrijen voor de Toezegging-IsHerhalingVan-relatie.
+      - name: toezegging__is_wijziging_van
+        description: Dlt-childrijen voor de Toezegging-IsWijzigingVan-relatie.
+      - name: toezegging__kamerbrief_nakoming
+        description: Dlt-childrijen voor Kamerbrieven die een Toezegging nakomen.
+      - name: toezegging__toegezegd_aan
+        description: Dlt-childrijen met personen en fracties aan wie is toegezegd.
       - name: persoon
         description: >
           Ruwe feed-rijen voor de entiteitsoort Persoon (een persoon als actor

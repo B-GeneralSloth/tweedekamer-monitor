@@ -1,9 +1,16 @@
 {{ config(unique_key=['zaak_id', 'gerelateerd_vanuit_id'], incremental_strategy='merge_with_deletes', deletion_relation='none', on_schema_change='fail', contract={'enforced': true}) }}
-WITH links AS (
-    SELECT DISTINCT parent.id AS zaak_id, ref AS gerelateerd_vanuit_id
-    FROM {{ source('bronze', 'zaak__gerelateerd_vanuit') }} link
-    JOIN {{ source('bronze', 'zaak') }} parent ON link._dlt_parent_id = parent._dlt_id
-    WHERE ref IS NOT NULL
+WITH current_zaken AS (
+    SELECT id, _dlt_id, feed_updated AS relatie_gewijzigd_op
+    FROM {{ source('bronze', 'zaak') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY id ORDER BY bijgewerkt DESC, feed_updated DESC, _dlt_id DESC
+    ) = 1 AND NOT verwijderd
+),
+links AS (
+    SELECT DISTINCT parent.id AS zaak_id, link.ref AS gerelateerd_vanuit_id, parent.relatie_gewijzigd_op
+    FROM {{ source('bronze', 'zaak__gerelateerd_vanuit') }} AS link
+    JOIN current_zaken AS parent ON link._dlt_parent_id = parent._dlt_id
+    WHERE link.ref IS NOT NULL
 )
 SELECT links.* FROM links
 JOIN {{ ref('zaak') }} zaak ON links.zaak_id = zaak.id

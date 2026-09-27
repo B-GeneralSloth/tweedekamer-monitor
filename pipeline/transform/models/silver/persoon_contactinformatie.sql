@@ -27,17 +27,18 @@ WITH latest AS (
 
 incoming AS (
     SELECT
-        id,
-        persoon_id,
-        soort,
-        waarde,
-        gewicht,
-        gewijzigd_op,
-        api_gewijzigd_op
+        latest.id,
+        CASE WHEN persoon.id IS NOT NULL THEN latest.persoon_id END AS persoon_id,
+        latest.soort,
+        latest.waarde,
+        latest.gewicht,
+        latest.gewijzigd_op,
+        latest.api_gewijzigd_op
     FROM latest
-    WHERE NOT verwijderd
+    LEFT JOIN {{ ref('persoon') }} AS persoon ON latest.persoon_id = persoon.id
+    WHERE NOT latest.verwijderd
         {% if is_incremental() %}
-        AND api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
+        AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
         {% endif %}
 )
 

@@ -34,7 +34,7 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.persoon_nevenfunctie_id,
+        CASE WHEN parent.id IS NOT NULL THEN latest.persoon_nevenfunctie_id END AS persoon_nevenfunctie_id,
         latest.jaar,
         latest.bedrag_soort,
         latest.bedrag_voorvoegsel,
@@ -47,7 +47,7 @@ incoming AS (
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('persoon_nevenfunctie') }} AS parent
+    LEFT JOIN {{ ref('persoon_nevenfunctie') }} AS parent
         ON latest.persoon_nevenfunctie_id = parent.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}

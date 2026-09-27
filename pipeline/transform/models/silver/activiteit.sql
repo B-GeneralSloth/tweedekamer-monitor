@@ -47,12 +47,13 @@ WITH latest AS (
 ),
 
 incoming AS (
-    SELECT latest.* EXCLUDE (verwijderd)
+    SELECT
+        latest.* EXCLUDE (verwijderd, voortouwcommissie_id),
+        CASE WHEN commissie.id IS NOT NULL THEN latest.voortouwcommissie_id END AS voortouwcommissie_id
     FROM latest
     LEFT JOIN {{ ref('commissie') }} AS commissie
         ON latest.voortouwcommissie_id = commissie.id
     WHERE NOT latest.verwijderd
-        AND (latest.voortouwcommissie_id IS NULL OR commissie.id IS NOT NULL)
         {% if is_incremental() %}
         AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
         {% endif %}

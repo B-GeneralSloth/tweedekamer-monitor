@@ -26,12 +26,12 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.commissie_id,
+        CASE WHEN parent.id IS NOT NULL THEN latest.commissie_id END AS commissie_id,
         latest.gewicht,
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('commissie') }} AS parent
+    LEFT JOIN {{ ref('commissie') }} AS parent
         ON latest.commissie_id = parent.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}

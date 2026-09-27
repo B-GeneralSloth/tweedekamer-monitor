@@ -33,7 +33,7 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.persoon_id,
+        CASE WHEN parent.id IS NOT NULL THEN latest.persoon_id END AS persoon_id,
         latest.doel,
         latest.bestemming,
         latest.van_parsed.datum AS van,
@@ -47,7 +47,7 @@ incoming AS (
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('persoon') }} AS parent
+    LEFT JOIN {{ ref('persoon') }} AS parent
         ON latest.persoon_id = parent.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}

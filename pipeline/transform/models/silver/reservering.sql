@@ -39,8 +39,8 @@ latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.activiteit_id,
-        latest.zaal_id,
+        CASE WHEN activity.id IS NOT NULL THEN latest.activiteit_id END AS activiteit_id,
+        CASE WHEN room.id IS NOT NULL THEN latest.zaal_id END AS zaal_id,
         latest.nummer,
         latest.activiteit_nummer,
         latest.status_code,
@@ -53,8 +53,6 @@ incoming AS (
     LEFT JOIN {{ ref('zaal') }} AS room
         ON latest.zaal_id = room.id
     WHERE NOT latest.verwijderd
-      AND (latest.activiteit_id IS NULL OR activity.id IS NOT NULL)
-      AND (latest.zaal_id IS NULL OR room.id IS NOT NULL)
         {% if is_incremental() %}
         AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
         {% endif %}

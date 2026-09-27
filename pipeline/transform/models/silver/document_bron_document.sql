@@ -1,0 +1,24 @@
+{{ config(unique_key=['document_id', 'bron_document_id'], incremental_strategy='merge_with_deletes', deletion_relation='none', on_schema_change='fail', contract={'enforced': true}) }}
+
+WITH current_documents AS (
+    SELECT id, _dlt_id, feed_updated AS relatie_gewijzigd_op
+    FROM {{ source('bronze', 'document') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY id
+        ORDER BY bijgewerkt DESC, feed_updated DESC, _dlt_id DESC
+    ) = 1
+),
+links AS (
+    SELECT DISTINCT
+        parent.id AS document_id,
+        link.ref AS bron_document_id,
+        parent.relatie_gewijzigd_op
+    FROM {{ source('bronze', 'document__bron_document') }} AS link
+    JOIN current_documents AS parent ON link._dlt_parent_id = parent._dlt_id
+    WHERE link.ref IS NOT NULL
+)
+
+SELECT links.*
+FROM links
+JOIN {{ ref('document') }} AS document ON links.document_id = document.id
+JOIN {{ ref('document') }} AS source_document ON links.bron_document_id = source_document.id

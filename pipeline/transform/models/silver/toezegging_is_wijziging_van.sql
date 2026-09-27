@@ -1,0 +1,26 @@
+{{ config(unique_key=['toezegging_id', 'wijziging_van_id'], incremental_strategy='merge_with_deletes', deletion_relation='none', on_schema_change='fail', contract={'enforced': true}) }}
+
+WITH current_toezeggingen AS (
+    SELECT id, _dlt_id
+    FROM {{ source('bronze', 'toezegging') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY id
+        ORDER BY bijgewerkt DESC, feed_updated DESC, _dlt_id DESC
+    ) = 1
+       AND NOT verwijderd
+),
+links AS (
+    SELECT
+        parent.id AS toezegging_id,
+        link.ref AS wijziging_van_id,
+        MAX(link.bijgewerkt) AS relatie_gewijzigd_op
+    FROM {{ source('bronze', 'toezegging__is_wijziging_van') }} AS link
+    JOIN current_toezeggingen AS parent ON link._dlt_parent_id = parent._dlt_id
+    WHERE link.ref IS NOT NULL
+    GROUP BY parent.id, link.ref
+)
+
+SELECT links.*
+FROM links
+JOIN {{ ref('toezegging') }} AS toezegging ON links.toezegging_id = toezegging.id
+JOIN {{ ref('toezegging') }} AS wijziging ON links.wijziging_van_id = wijziging.id

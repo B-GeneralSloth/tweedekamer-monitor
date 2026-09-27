@@ -34,26 +34,27 @@ WITH latest AS (
 
 incoming AS (
     SELECT
-        id,
-        persoon_id,
-        functie,
-        werkgever,
-        omschrijving_nl,
-        omschrijving_en,
-        plaats,
-        van_parsed.datum AS van,
-        van_ruw,
-        van_parsed.precisie AS van_precisie,
-        tot_en_met_parsed.datum AS tot_en_met,
-        tot_en_met_ruw,
-        tot_en_met_parsed.precisie AS tot_en_met_precisie,
-        gewicht,
-        gewijzigd_op,
-        api_gewijzigd_op
+        latest.id,
+        CASE WHEN persoon.id IS NOT NULL THEN latest.persoon_id END AS persoon_id,
+        latest.functie,
+        latest.werkgever,
+        latest.omschrijving_nl,
+        latest.omschrijving_en,
+        latest.plaats,
+        latest.van_parsed.datum AS van,
+        latest.van_ruw,
+        latest.van_parsed.precisie AS van_precisie,
+        latest.tot_en_met_parsed.datum AS tot_en_met,
+        latest.tot_en_met_ruw,
+        latest.tot_en_met_parsed.precisie AS tot_en_met_precisie,
+        latest.gewicht,
+        latest.gewijzigd_op,
+        latest.api_gewijzigd_op
     FROM latest
-    WHERE NOT verwijderd
+    LEFT JOIN {{ ref('persoon') }} AS persoon ON latest.persoon_id = persoon.id
+    WHERE NOT latest.verwijderd
         {% if is_incremental() %}
-        AND api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
+        AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
         {% endif %}
 )
 

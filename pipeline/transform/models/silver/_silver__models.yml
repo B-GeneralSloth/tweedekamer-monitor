@@ -80,7 +80,7 @@ models:
   - name: zaak_actor
     description: >
       Actuele, ontdubbelde rollen van actoren binnen zaken. Verwijderde records
-      en records met onbekende niet-null parent references worden niet opgenomen.
+      worden niet opgenomen; niet-resolveerbare parent references worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -170,6 +170,9 @@ models:
       - name: activiteit_id
         data_type: VARCHAR
         description: Activiteit in de relatie.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Zaak-feedversie voor deze relatiesnapshot.
 
   - name: zaak_agendapunt
     description: Relatiebrug tussen Zaken en Agendapunten.
@@ -189,6 +192,213 @@ models:
       - name: agendapunt_id
         data_type: VARCHAR
         description: Agendapunt in de relatie.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Zaak-feedversie voor deze relatiesnapshot.
+
+  - name: toezegging
+    description: >
+      Actuele toezeggingen. Een activiteit_id zonder actieve overeenkomstige
+      Activiteit wordt NULL gemaakt.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [activiteit_id]
+        expression: silver.activiteit (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een Toezegging.
+        data_tests: [unique, not_null]
+      - name: aanmaakdatum
+        data_type: DATE
+        description: Datum waarop de toezegging is aangemaakt.
+      - name: nummer
+        data_type: VARCHAR
+        description: Nummer van de toezegging.
+      - name: activiteit_id
+        data_type: VARCHAR
+        description: GUID van de bijbehorende Activiteit, of NULL als die niet in silver staat.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('activiteit'), field: id}
+      - name: activiteit_nummer
+        data_type: VARCHAR
+        description: Bronnummer van de bijbehorende Activiteit.
+      - name: naam
+        data_type: VARCHAR
+        description: Naam van de toegezegde persoon zoals geregistreerd in de bron.
+      - name: achternaam
+        data_type: VARCHAR
+        description: Achternaam van de toegezegde persoon.
+      - name: initialen
+        data_type: VARCHAR
+        description: Initialen van de toegezegde persoon.
+      - name: tussenvoegsel
+        data_type: VARCHAR
+        description: Tussenvoegsel van de toegezegde persoon.
+      - name: voornaam
+        data_type: VARCHAR
+        description: Voornaam van de toegezegde persoon.
+      - name: achtervoegsel
+        data_type: VARCHAR
+        description: Achtervoegsel van de toegezegde persoon.
+      - name: titulatuur
+        data_type: VARCHAR
+        description: Titulatuur van de toegezegde persoon.
+      - name: functie
+        data_type: VARCHAR
+        description: Functie van de persoon die de toezegging deed.
+      - name: status
+        data_type: VARCHAR
+        description: Status van de toezegging.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Openstaand", "Voldaan", "Deels Voldaan", "Vervallen", "Afgedaan", "Deels Afgedaan"]
+      - name: datum_nakoming
+        data_type: DATE
+        description: Datum waarop de toezegging is nagekomen.
+      - name: ministerie
+        data_type: VARCHAR
+        description: Ministerie dat verantwoordelijk is voor de toezegging.
+      - name: tekst
+        data_type: VARCHAR
+        description: Inhoudelijke tekst van de toezegging.
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum zichtbaar in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: toezegging_is_aanvulling_op
+    description: Zelfrefererende brug voor toezeggingen die een aanvulling zijn op andere toezeggingen.
+    constraints:
+      - type: primary_key
+        columns: [toezegging_id, aanvulling_op_id]
+      - type: foreign_key
+        columns: [toezegging_id]
+        expression: silver.toezegging (id)
+      - type: foreign_key
+        columns: [aanvulling_op_id]
+        expression: silver.toezegging (id)
+    columns:
+      - name: toezegging_id
+        data_type: VARCHAR
+        description: Toezegging die de aanvulling vormt.
+      - name: aanvulling_op_id
+        data_type: VARCHAR
+        description: Toezegging waarop wordt aangevuld.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum van deze relatie in de bron.
+
+  - name: toezegging_is_herhaling_van
+    description: Zelfrefererende brug voor toezeggingen die een herhaling van eerdere toezeggingen zijn.
+    constraints:
+      - type: primary_key
+        columns: [toezegging_id, herhaling_van_id]
+      - type: foreign_key
+        columns: [toezegging_id]
+        expression: silver.toezegging (id)
+      - type: foreign_key
+        columns: [herhaling_van_id]
+        expression: silver.toezegging (id)
+    columns:
+      - name: toezegging_id
+        data_type: VARCHAR
+        description: Toezegging die de herhaling vormt.
+      - name: herhaling_van_id
+        data_type: VARCHAR
+        description: Eerdere toezegging die wordt herhaald.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum van deze relatie in de bron.
+
+  - name: toezegging_is_wijziging_van
+    description: Zelfrefererende brug voor toezeggingen die eerdere toezeggingen wijzigen.
+    constraints:
+      - type: primary_key
+        columns: [toezegging_id, wijziging_van_id]
+      - type: foreign_key
+        columns: [toezegging_id]
+        expression: silver.toezegging (id)
+      - type: foreign_key
+        columns: [wijziging_van_id]
+        expression: silver.toezegging (id)
+    columns:
+      - name: toezegging_id
+        data_type: VARCHAR
+        description: Toezegging die de wijziging vormt.
+      - name: wijziging_van_id
+        data_type: VARCHAR
+        description: Eerdere toezegging die wordt gewijzigd.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum van deze relatie in de bron.
+
+  - name: toezegging_kamerbrief_nakoming
+    description: Brug tussen toezeggingen en Kamerbrieven waarmee zij worden nagekomen.
+    constraints:
+      - type: primary_key
+        columns: [toezegging_id, document_id]
+      - type: foreign_key
+        columns: [toezegging_id]
+        expression: silver.toezegging (id)
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+    columns:
+      - name: toezegging_id
+        data_type: VARCHAR
+        description: Toezegging die wordt nagekomen.
+      - name: document_id
+        data_type: VARCHAR
+        description: Document van de Kamerbrief waarmee de toezegging wordt nagekomen.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Toezegging-feedversie voor deze relatiesnapshot.
+
+  - name: toezegging_toegezegd_aan
+    description: Brug met de personen en fracties aan wie een toezegging is gedaan.
+    constraints:
+      - type: primary_key
+        columns: [toezegging_id, volgorde]
+      - type: foreign_key
+        columns: [toezegging_id]
+        expression: silver.toezegging (id)
+      - type: foreign_key
+        columns: [persoon_id]
+        expression: silver.persoon (id)
+      - type: foreign_key
+        columns: [fractie_id]
+        expression: silver.fractie (id)
+    columns:
+      - name: toezegging_id
+        data_type: VARCHAR
+        description: Toezegging die aan actoren is gedaan.
+      - name: volgorde
+        data_type: INTEGER
+        description: Positie van de actorverwijzing in de bronlijst.
+      - name: persoon_id
+        data_type: VARCHAR
+        description: Optionele GUID van de Persoon aan wie is toegezegd.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('persoon'), field: id}
+      - name: fractie_id
+        data_type: VARCHAR
+        description: Optionele GUID van de Fractie aan wie is toegezegd.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('fractie'), field: id}
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Toezegging-feedversie voor deze relatiesnapshot.
 
   - name: zaak_gerelateerd_vanuit
     description: Zelfrefererende relatiebrug voor gerelateerde Zaken.
@@ -208,6 +418,9 @@ models:
       - name: gerelateerd_vanuit_id
         data_type: VARCHAR
         description: Gerelateerde bronzaak.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Zaak-feedversie voor deze relatiesnapshot.
 
   - name: zaak_vervangen_vanuit
     description: Zelfrefererende relatiebrug voor vervangen Zaken.
@@ -227,12 +440,14 @@ models:
       - name: vervangen_vanuit_id
         data_type: VARCHAR
         description: Vervangen bronzaak.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Zaak-feedversie voor deze relatiesnapshot.
 
   - name: activiteit_actor
     description: >
       Actuele, ontdubbelde rollen van actoren binnen activiteiten. Verwijderde
-      records en records met onbekende niet-null parent references worden niet
-      opgenomen.
+      records worden niet opgenomen; niet-resolveerbare parent references worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -309,9 +524,8 @@ models:
 
   - name: agendapunt
     description: >
-      Actuele, ontdubbelde geregistreerde onderwerpen van activiteiten.
-      Verwijderde agendapunten en records zonder een actieve Activiteit worden
-      niet opgenomen.
+      Actuele, ontdubbelde geregistreerde onderwerpen. Verwijderde agendapunten
+      worden niet opgenomen; activiteit_id wordt NULL als de Activiteit niet in silver staat.
     constraints:
       - type: primary_key
         columns: [id]
@@ -410,8 +624,8 @@ models:
   - name: activiteit
     description: >
       Actuele, ontdubbelde activiteiten als onderdeel van het parlementaire
-      proces. Verwijderde activiteiten en activiteiten met een onbekende
-      voortouwcommissie worden niet opgenomen.
+      proces. Verwijderde activiteiten worden niet opgenomen; een niet-resolveerbare
+      voortouwcommissie_id wordt NULL gemaakt.
     constraints:
       - type: primary_key
         columns: [id]
@@ -534,6 +748,9 @@ models:
         data_tests:
           - relationships:
               arguments: {to: ref('activiteit'), field: id}
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Activiteit-feedversie voor deze relatiesnapshot.
 
   - name: activiteit_voortgezet_vanuit
     description: Relatiebrug voor activiteiten die vanuit een andere activiteit zijn voortgezet.
@@ -559,6 +776,9 @@ models:
         data_tests:
           - relationships:
               arguments: {to: ref('activiteit'), field: id}
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Activiteit-feedversie voor deze relatiesnapshot.
 
   - name: persoon
     description: >
@@ -1364,8 +1584,8 @@ models:
 
   - name: fractie_zetel
     description: >
-      Actuele, ontdubbelde zetels van fracties. Verwijderde zetels en zetels
-      zonder een actieve bijbehorende Fractie worden niet opgenomen.
+      Actuele, ontdubbelde zetels van fracties. Verwijderde zetels worden niet
+      opgenomen; fractie_id wordt NULL als de Fractie niet in silver staat.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1408,8 +1628,7 @@ models:
   - name: fractie_zetel_persoon
     description: >
       Actuele, ontdubbelde personen die een FractieZetel bezetten. Verwijderde
-      records en records zonder actieve FractieZetel of Persoon worden niet
-      opgenomen.
+      records worden niet opgenomen; niet-resolveerbare parent IDs worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1494,7 +1713,7 @@ models:
   - name: fractie_zetel_vacature
     description: >
       Actuele, ontdubbelde vacatures voor FractieZetels. Verwijderde vacatures
-      en vacatures zonder actieve FractieZetel worden niet opgenomen.
+      worden niet opgenomen; fractie_zetel_id wordt NULL als de zetel ontbreekt.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1652,7 +1871,7 @@ models:
   - name: commissie_contactinformatie
     description: >
       Actuele, ontdubbelde contactinformatie van commissies. Verwijderde records
-      en records zonder een actieve bijbehorende Commissie worden niet opgenomen.
+      worden niet opgenomen; commissie_id wordt NULL als de Commissie niet in silver staat.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1700,8 +1919,8 @@ models:
 
   - name: commissie_zetel
     description: >
-      Actuele, ontdubbelde zetels van commissies. Verwijderde zetels en zetels
-      zonder een actieve bijbehorende Commissie worden niet opgenomen.
+      Actuele, ontdubbelde zetels van commissies. Verwijderde zetels worden niet
+      opgenomen; commissie_id wordt NULL als de Commissie niet in silver staat.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1744,8 +1963,8 @@ models:
   - name: commissie_zetel_vast_persoon
     description: >
       Actuele, ontdubbelde personen die een CommissieZetel vast bezetten.
-      Verwijderde records en records zonder actieve CommissieZetel of Persoon
-      worden niet opgenomen.
+      Verwijderde records worden niet opgenomen; niet-resolveerbare parent IDs
+      worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1830,7 +2049,7 @@ models:
   - name: commissie_zetel_vast_vacature
     description: >
       Actuele, ontdubbelde vacatures voor vaste CommissieZetels. Verwijderde
-      records zonder actieve CommissieZetel of Fractie worden niet opgenomen.
+      records worden niet opgenomen; niet-resolveerbare parent IDs worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -1915,8 +2134,8 @@ models:
   - name: commissie_zetel_vervanger_persoon
     description: >
       Actuele, ontdubbelde personen die een CommissieZetel als plaatsvervangend
-      lid bezetten. Verwijderde records en records zonder actieve CommissieZetel
-      of Persoon worden niet opgenomen.
+      lid bezetten. Verwijderde records worden niet opgenomen; niet-resolveerbare
+      parent IDs worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -2001,8 +2220,8 @@ models:
   - name: commissie_zetel_vervanger_vacature
     description: >
       Actuele, ontdubbelde vacatures voor plaatsvervangende CommissieZetels.
-      Verwijderde records zonder actieve CommissieZetel of Fractie worden niet
-      opgenomen.
+      Verwijderde records worden niet opgenomen; niet-resolveerbare parent IDs
+      worden NULL.
     constraints:
       - type: primary_key
         columns: [id]
@@ -2195,8 +2414,8 @@ models:
   - name: verslag
     description: >
       Actuele, ontdubbelde verslagen van vergaderingen. Verwijderde verslagen
-      en verslagen zonder een actieve bijbehorende Vergadering worden niet
-      opgenomen.
+      worden niet opgenomen; vergadering_id wordt NULL als de Vergadering niet
+      in silver staat.
     constraints:
       - type: primary_key
         columns: [id]
@@ -2247,3 +2466,531 @@ models:
           zichtbaar is geworden in het Gegevensmagazijn.
         data_tests:
           - not_null
+
+  - name: document
+    description: Actuele, ontdubbelde documenten met hun bron-feed enclosure-link.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [kamerstukdossier_id]
+        expression: silver.kamerstukdossier (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een Document.
+        data_tests: [unique, not_null]
+      - name: content_type
+        data_type: VARCHAR
+        description: MIME-type van het document.
+      - name: content_length
+        data_type: BIGINT
+        description: Bestandsgrootte in bytes.
+      - name: soort
+        data_type: VARCHAR
+        description: Soort document.
+      - name: document_nummer
+        data_type: VARCHAR
+        description: Intern documentnummer.
+      - name: titel
+        data_type: VARCHAR
+        description: Titel van het document.
+      - name: onderwerp
+        data_type: VARCHAR
+        description: Onderwerp van het document.
+      - name: datum
+        data_type: DATE
+        description: Datum van het document.
+      - name: volgnummer
+        data_type: BIGINT
+        description: Volgnummer binnen het dossier.
+      - name: vergaderjaar
+        data_type: VARCHAR
+        description: Vergaderjaar van het document.
+      - name: kamer
+        data_type: BIGINT
+        description: Kamer van de Staten-Generaal.
+      - name: datum_registratie
+        data_type: DATE
+        description: Registratiedatum.
+      - name: datum_ontvangst
+        data_type: DATE
+        description: Ontvangstdatum.
+      - name: organisatie
+        data_type: VARCHAR
+        description: Aanleverende organisatie.
+      - name: kamerstukdossier_id
+        data_type: VARCHAR
+        description: GUID van het Kamerstukdossier.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('kamerstukdossier'), field: id}
+      - name: huidige_document_versie_id
+        data_type: VARCHAR
+        description: GUID van de huidige DocumentVersie.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('document_versie'), field: id}
+      - name: kenmerk_afzender
+        data_type: VARCHAR
+        description: Kenmerk van de afzender.
+      - name: aanhangselnummer
+        data_type: VARCHAR
+        description: Nummer van het aanhangsel.
+      - name: alias
+        data_type: VARCHAR
+        description: Alias van het document.
+      - name: citeertitel
+        data_type: VARCHAR
+        description: Citeertitel van het document.
+      - name: document_url
+        data_type: VARCHAR
+        description: Documentlink uit de Atom-feed.
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: document_versie
+    description: Actuele, ontdubbelde versies van documenten.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een DocumentVersie.
+        data_tests: [unique, not_null]
+      - name: status
+        data_type: VARCHAR
+        description: Status van de documentversie.
+      - name: versienummer
+        data_type: BIGINT
+        description: Versienummer.
+      - name: bestandsgrootte
+        data_type: BIGINT
+        description: Bestandsgrootte in bytes.
+      - name: extensie
+        data_type: VARCHAR
+        description: Bestandsextensie.
+      - name: datum
+        data_type: DATE
+        description: Datum van de documentversie.
+      - name: externeidentifier
+        data_type: VARCHAR
+        description: Externe identificatie.
+      - name: document_id
+        data_type: VARCHAR
+        description: GUID van het Document.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('document'), field: id}
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: document_publicatie
+    description: Actuele publicaties van documentversies.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [document_versie_id]
+        expression: silver.document_versie (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een DocumentPublicatie.
+        data_tests: [unique, not_null]
+      - name: content_type
+        data_type: VARCHAR
+        description: MIME-type van de publicatie.
+      - name: content_length
+        data_type: BIGINT
+        description: Bestandsgrootte in bytes.
+      - name: identifier
+        data_type: VARCHAR
+        description: Identifier van de publicatie.
+      - name: document_type
+        data_type: VARCHAR
+        description: Type van de publicatie.
+      - name: file_name
+        data_type: VARCHAR
+        description: Bestandsnaam van de publicatie.
+      - name: source
+        data_type: VARCHAR
+        description: Bron van de publicatie.
+      - name: publicatie_datum
+        data_type: DATE
+        description: Publicatiedatum.
+      - name: url
+        data_type: VARCHAR
+        description: URL uit het publicatierecord.
+      - name: document_url
+        data_type: VARCHAR
+        description: Documentlink uit de Atom-feed.
+      - name: document_versie_id
+        data_type: VARCHAR
+        description: GUID van de DocumentVersie.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('document_versie'), field: id}
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: document_publicatie_metadata
+    description: Actuele metadata-publicaties van documentversies.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [document_versie_id]
+        expression: silver.document_versie (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van publicatiemetadata.
+        data_tests: [unique, not_null]
+      - name: content_type
+        data_type: VARCHAR
+        description: MIME-type van de metadata-publicatie.
+      - name: content_length
+        data_type: BIGINT
+        description: Bestandsgrootte in bytes.
+      - name: identifier
+        data_type: VARCHAR
+        description: Identifier van de metadata-publicatie.
+      - name: document_type
+        data_type: VARCHAR
+        description: Type van de metadata-publicatie.
+      - name: file_name
+        data_type: VARCHAR
+        description: Bestandsnaam van de metadata-publicatie.
+      - name: source
+        data_type: VARCHAR
+        description: Bron van de metadata-publicatie.
+      - name: publicatie_datum
+        data_type: DATE
+        description: Publicatiedatum van de metadata.
+      - name: url
+        data_type: VARCHAR
+        description: URL uit het metadata-record.
+      - name: document_url
+        data_type: VARCHAR
+        description: Documentlink uit de Atom-feed.
+      - name: document_versie_id
+        data_type: VARCHAR
+        description: GUID van de DocumentVersie.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('document_versie'), field: id}
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: document_actor
+    description: Actuele actoren die aan documenten zijn gekoppeld.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+      - type: foreign_key
+        columns: [persoon_id]
+        expression: silver.persoon (id)
+      - type: foreign_key
+        columns: [fractie_id]
+        expression: silver.fractie (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een DocumentActor.
+        data_tests: [unique, not_null]
+      - name: actor_naam
+        data_type: VARCHAR
+        description: Naam van de actor.
+      - name: functie
+        data_type: VARCHAR
+        description: Functie van de actor.
+      - name: relatie
+        data_type: VARCHAR
+        description: Relatie van de actor tot het document.
+      - name: sid_actor
+        data_type: VARCHAR
+        description: Intern identificatienummer van de actor.
+      - name: persoon_id
+        data_type: VARCHAR
+        description: GUID van de Persoon.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('persoon'), field: id}
+      - name: document_id
+        data_type: VARCHAR
+        description: GUID van het Document.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('document'), field: id}
+      - name: actor_fractie
+        data_type: VARCHAR
+        description: Fractienaam van de actor.
+      - name: fractie_id
+        data_type: VARCHAR
+        description: GUID van de Fractie.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('fractie'), field: id}
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: document_bron_document
+    description: Zelfrefererende relatiebrug tussen documenten en brondocumenten.
+    constraints:
+      - type: primary_key
+        columns: [document_id, bron_document_id]
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+      - type: foreign_key
+        columns: [bron_document_id]
+        expression: silver.document (id)
+    columns:
+      - name: document_id
+        data_type: VARCHAR
+        description: Document dat naar een brondocument verwijst.
+      - name: bron_document_id
+        data_type: VARCHAR
+        description: Brondocument waarnaar wordt verwezen.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Document-feedversie voor deze relatiesnapshot.
+
+  - name: document_zaak
+    description: Relatiebrug tussen documenten en zaken.
+    constraints:
+      - type: primary_key
+        columns: [document_id, zaak_id]
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+      - type: foreign_key
+        columns: [zaak_id]
+        expression: silver.zaak (id)
+    columns:
+      - name: document_id
+        data_type: VARCHAR
+        description: Document in de relatie.
+      - name: zaak_id
+        data_type: VARCHAR
+        description: Zaak in de relatie.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Document-feedversie voor deze relatiesnapshot.
+
+  - name: document_activiteit
+    description: Relatiebrug tussen documenten en activiteiten.
+    constraints:
+      - type: primary_key
+        columns: [document_id, activiteit_id]
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+      - type: foreign_key
+        columns: [activiteit_id]
+        expression: silver.activiteit (id)
+    columns:
+      - name: document_id
+        data_type: VARCHAR
+        description: Document in de relatie.
+      - name: activiteit_id
+        data_type: VARCHAR
+        description: Activiteit in de relatie.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Document-feedversie voor deze relatiesnapshot.
+
+  - name: document_agendapunt
+    description: Relatiebrug tussen documenten en agendapunten.
+    constraints:
+      - type: primary_key
+        columns: [document_id, agendapunt_id]
+      - type: foreign_key
+        columns: [document_id]
+        expression: silver.document (id)
+      - type: foreign_key
+        columns: [agendapunt_id]
+        expression: silver.agendapunt (id)
+    columns:
+      - name: document_id
+        data_type: VARCHAR
+        description: Document in de relatie.
+      - name: agendapunt_id
+        data_type: VARCHAR
+        description: Agendapunt in de relatie.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Document-feedversie voor deze relatiesnapshot.
+
+  - name: besluit
+    description: Actuele, ontdubbelde besluiten met een optionele verwijzing naar een agendapunt.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [agendapunt_id]
+        expression: silver.agendapunt (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een Besluit.
+        data_tests: [unique, not_null]
+      - name: agendapunt_id
+        data_type: VARCHAR
+        description: Optionele GUID van het bijbehorende Agendapunt.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('agendapunt'), field: id}
+      - name: stemmings_soort
+        data_type: VARCHAR
+        description: Soort stemming bij het Besluit, indien van toepassing.
+      - name: besluit_soort
+        data_type: VARCHAR
+        description: Soort Besluit.
+      - name: besluit_tekst
+        data_type: VARCHAR
+        description: Inhoudelijke tekst van het Besluit.
+      - name: opmerking
+        data_type: VARCHAR
+        description: Opmerking bij het Besluit.
+      - name: status
+        data_type: VARCHAR
+        description: Status van het Besluit.
+      - name: agendapunt_zaak_besluit_volgorde
+        data_type: INTEGER
+        description: Volgorde van het Besluit binnen de combinatie van Agendapunt en Zaak.
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum zichtbaar in het Gegevensmagazijn.
+        data_tests: [not_null]
+
+  - name: besluit_zaak
+    description: Relatiebrug tussen Besluiten en Zaken.
+    constraints:
+      - type: primary_key
+        columns: [besluit_id, zaak_id]
+      - type: foreign_key
+        columns: [besluit_id]
+        expression: silver.besluit (id)
+      - type: foreign_key
+        columns: [zaak_id]
+        expression: silver.zaak (id)
+    columns:
+      - name: besluit_id
+        data_type: VARCHAR
+        description: Besluit in de relatie.
+      - name: zaak_id
+        data_type: VARCHAR
+        description: Zaak waarop het Besluit betrekking heeft.
+      - name: relatie_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Wijzigingstijd van de bovenliggende Besluit-feedversie voor deze relatiesnapshot.
+
+  - name: stemming
+    description: Actuele, ontdubbelde individuele en fractiestemmingen bij besluiten.
+    constraints:
+      - type: primary_key
+        columns: [id]
+      - type: foreign_key
+        columns: [besluit_id]
+        expression: silver.besluit (id)
+      - type: foreign_key
+        columns: [persoon_id]
+        expression: silver.persoon (id)
+      - type: foreign_key
+        columns: [fractie_id]
+        expression: silver.fractie (id)
+    columns:
+      - name: id
+        data_type: VARCHAR
+        description: Uniek identificatienummer van een Stemming.
+        data_tests: [unique, not_null]
+      - name: besluit_id
+        data_type: VARCHAR
+        description: Optionele GUID van het Besluit waarop is gestemd.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('besluit'), field: id}
+      - name: soort
+        data_type: VARCHAR
+        description: Uitgebrachte stem, bijvoorbeeld Voor of Tegen.
+      - name: fractie_grootte
+        data_type: INTEGER
+        description: Aantal leden dat de fractie vertegenwoordigt bij de stemming.
+      - name: actor_naam
+        data_type: VARCHAR
+        description: Naam van de stemmende actor zoals vastgelegd in de bron.
+      - name: actor_fractie
+        data_type: VARCHAR
+        description: Fractie van de actor zoals vastgelegd bij de stemming.
+      - name: vergissing
+        data_type: BOOLEAN
+        description: Geeft aan of de stem als vergissing is geregistreerd.
+      - name: sid_actor_lid
+        data_type: VARCHAR
+        description: Intern bronidentificatienummer van het stemmende lid.
+      - name: sid_actor_fractie
+        data_type: VARCHAR
+        description: Intern bronidentificatienummer van de stemmende fractie.
+      - name: persoon_id
+        data_type: VARCHAR
+        description: Optionele GUID van de stemmende Persoon.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('persoon'), field: id}
+      - name: fractie_id
+        data_type: VARCHAR
+        description: Optionele GUID van de stemmende Fractie.
+        data_tests:
+          - relationships:
+              arguments: {to: ref('fractie'), field: id}
+      - name: gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum in het bronsysteem.
+        data_tests: [not_null]
+      - name: api_gewijzigd_op
+        data_type: TIMESTAMP WITH TIME ZONE
+        description: Laatste wijzigingsdatum zichtbaar in het Gegevensmagazijn.
+        data_tests: [not_null]

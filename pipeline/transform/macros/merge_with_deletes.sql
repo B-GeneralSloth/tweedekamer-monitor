@@ -41,6 +41,14 @@
             SELECT NULL AS id
             WHERE FALSE
         {% endset %}
+        {% set stale_sql %}
+            DELETE FROM {{ target_relation }} AS DBT_TARGET
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM {{ temp_relation }} AS DBT_SOURCE
+                WHERE {% for key in unique_keys %}DBT_TARGET.{{ adapter.quote(key) }} = DBT_SOURCE.{{ adapter.quote(key) }}{% if not loop.last %} AND {% endif %}{% endfor %}
+            )
+        {% endset %}
     {% else %}
         {% set latest_deleted_sql %}
             SELECT {{ deletion_key }}
@@ -56,6 +64,10 @@
             ) AS latest
             WHERE version_number = 1
                 AND verwijderd = true
+        {% endset %}
+        {% set stale_sql %}
+            SELECT NULL
+            WHERE FALSE
         {% endset %}
     {% endif %}
 
@@ -98,13 +110,20 @@
         {% endfor %}
     {% endif %}
 
-    {% set delete_sql %}
-        DELETE FROM {{ target_relation }} AS DBT_TARGET
-        WHERE {% for key in unique_keys %}{{ adapter.quote(key) }} IN (
-            SELECT {{ deletion_key }}
-            FROM ({{ latest_deleted_sql }}) AS DBT_DELETED_KEYS
-        ){% if not loop.last %} OR {% endif %}{% endfor %}
-    {% endset %}
+    {% if deletion_relation == 'none' %}
+        {% set delete_sql %}
+            DELETE FROM {{ target_relation }} AS DBT_TARGET
+            WHERE FALSE
+        {% endset %}
+    {% else %}
+        {% set delete_sql %}
+            DELETE FROM {{ target_relation }} AS DBT_TARGET
+            WHERE {% for key in unique_keys %}{{ adapter.quote(key) }} IN (
+                SELECT {{ deletion_key }}
+                FROM ({{ latest_deleted_sql }}) AS DBT_DELETED_KEYS
+            ){% if not loop.last %} OR {% endif %}{% endfor %}
+        {% endset %}
+    {% endif %}
 
     {% set insert_sql %}
         INSERT INTO {{ target_relation }} ({{ quoted_columns }})

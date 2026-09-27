@@ -34,10 +34,10 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.zaak_id,
-        latest.persoon_id,
-        latest.fractie_id,
-        latest.commissie_id,
+        CASE WHEN zaak.id IS NOT NULL THEN latest.zaak_id END AS zaak_id,
+        CASE WHEN person.id IS NOT NULL THEN latest.persoon_id END AS persoon_id,
+        CASE WHEN faction.id IS NOT NULL THEN latest.fractie_id END AS fractie_id,
+        CASE WHEN committee.id IS NOT NULL THEN latest.commissie_id END AS commissie_id,
         latest.actor_naam,
         latest.actor_fractie,
         latest.actor_afkorting,
@@ -52,10 +52,6 @@ incoming AS (
     LEFT JOIN {{ ref('fractie') }} AS faction ON latest.fractie_id = faction.id
     LEFT JOIN {{ ref('commissie') }} AS committee ON latest.commissie_id = committee.id
     WHERE NOT latest.verwijderd
-      AND (latest.zaak_id IS NULL OR zaak.id IS NOT NULL)
-      AND (latest.persoon_id IS NULL OR person.id IS NOT NULL)
-      AND (latest.fractie_id IS NULL OR faction.id IS NOT NULL)
-      AND (latest.commissie_id IS NULL OR committee.id IS NOT NULL)
         {% if is_incremental() %}
         AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
         {% endif %}

@@ -2,7 +2,7 @@
     config(
         unique_key='id',
         incremental_strategy='merge_with_deletes',
-        deletion_relation='bronze.fractie_zetel',
+        deletion_relation='bronze.besluit',
         on_schema_change='fail',
         contract={'enforced': true}
     )
@@ -11,12 +11,17 @@
 WITH latest AS (
     SELECT
         id,
-        fractie__ref AS fractie_id,
-        CAST(gewicht AS INTEGER) AS gewicht,
+        agendapunt__ref AS agendapunt_id,
+        stemmings_soort,
+        besluit_soort,
+        besluit_tekst,
+        opmerking,
+        status,
+        CAST(agendapunt_zaak_besluit_volgorde AS INTEGER) AS agendapunt_zaak_besluit_volgorde,
         verwijderd,
         bijgewerkt AS gewijzigd_op,
         feed_updated AS api_gewijzigd_op
-    FROM {{ source('bronze', 'fractie_zetel') }}
+    FROM {{ source('bronze', 'besluit') }}
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY id
         ORDER BY bijgewerkt DESC, feed_updated DESC, _dlt_id DESC
@@ -25,24 +30,15 @@ WITH latest AS (
 
 incoming AS (
     SELECT
-        latest.id,
-        CASE WHEN parent.id IS NOT NULL THEN latest.fractie_id END AS fractie_id,
-        latest.gewicht,
-        latest.gewijzigd_op,
-        latest.api_gewijzigd_op
+        latest.* EXCLUDE (verwijderd, agendapunt_id),
+        CASE WHEN agendapunt.id IS NOT NULL THEN latest.agendapunt_id END AS agendapunt_id
     FROM latest
-    LEFT JOIN {{ ref('fractie') }} AS parent
-        ON latest.fractie_id = parent.id
+    LEFT JOIN {{ ref('agendapunt') }} AS agendapunt
+        ON latest.agendapunt_id = agendapunt.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}
         AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
         {% endif %}
 )
 
-SELECT
-    id,
-    fractie_id,
-    gewicht,
-    gewijzigd_op,
-    api_gewijzigd_op
-FROM incoming
+SELECT * FROM incoming

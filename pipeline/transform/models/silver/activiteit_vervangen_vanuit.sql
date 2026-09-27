@@ -8,12 +8,20 @@
     )
 }}
 
-WITH links AS (
+WITH current_activiteiten AS (
+    SELECT id, _dlt_id, feed_updated AS relatie_gewijzigd_op
+    FROM {{ source('bronze', 'activiteit') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY id ORDER BY bijgewerkt DESC, feed_updated DESC, _dlt_id DESC
+    ) = 1 AND NOT verwijderd
+),
+links AS (
     SELECT DISTINCT
         parent.id AS activiteit_id,
-        ref AS vervangen_vanuit_id
+        link.ref AS vervangen_vanuit_id,
+        parent.relatie_gewijzigd_op
     FROM {{ source('bronze', 'activiteit__vervangen_vanuit') }} AS link
-    INNER JOIN {{ source('bronze', 'activiteit') }} AS parent
+    INNER JOIN current_activiteiten AS parent
         ON link._dlt_parent_id = parent._dlt_id
     WHERE link.ref IS NOT NULL
 ),

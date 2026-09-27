@@ -33,7 +33,7 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.activiteit_id,
+        CASE WHEN activity.id IS NOT NULL THEN latest.activiteit_id END AS activiteit_id,
         latest.nummer,
         latest.onderwerp,
         latest.aanvangstijd,
@@ -45,7 +45,7 @@ incoming AS (
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('activiteit') }} AS activity
+    LEFT JOIN {{ ref('activiteit') }} AS activity
         ON latest.activiteit_id = activity.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}

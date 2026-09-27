@@ -31,8 +31,8 @@ WITH latest AS (
 incoming AS (
     SELECT
         latest.id,
-        latest.commissie_zetel_id,
-        latest.fractie_id,
+        CASE WHEN seat.id IS NOT NULL THEN latest.commissie_zetel_id END AS commissie_zetel_id,
+        CASE WHEN faction.id IS NOT NULL THEN latest.fractie_id END AS fractie_id,
         latest.functie,
         latest.van_parsed.datum AS van,
         latest.van_ruw,
@@ -43,9 +43,9 @@ incoming AS (
         latest.gewijzigd_op,
         latest.api_gewijzigd_op
     FROM latest
-    INNER JOIN {{ ref('commissie_zetel') }} AS seat
+    LEFT JOIN {{ ref('commissie_zetel') }} AS seat
         ON latest.commissie_zetel_id = seat.id
-    INNER JOIN {{ ref('fractie') }} AS faction
+    LEFT JOIN {{ ref('fractie') }} AS faction
         ON latest.fractie_id = faction.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}
