@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import dlt
+import duckdb
 
 # Support both module execution and direct script execution from the pipeline directory.
 if __package__:
@@ -43,9 +44,25 @@ def run_transform() -> None:
     environment = os.environ.copy()
     environment["DUCKDB_PATH"] = str(DUCKDB_PATH)
     dbt_executable = Path(sys.executable).with_name("dbt")
+    dbt_command = [
+        str(dbt_executable),
+        "build",
+        "--project-dir",
+        str(TRANSFORM_DIR),
+        "--profiles-dir",
+        str(TRANSFORM_DIR),
+    ]
+
+    result = subprocess.run(dbt_command, env=environment)
+    if result.returncode == 0:
+        return
+
+    print("Incremental dbt build failed; rebuilding the generated silver schema from bronze.")
+    with duckdb.connect(str(DUCKDB_PATH)) as connection:
+        connection.execute("DROP SCHEMA IF EXISTS silver CASCADE")
 
     subprocess.run(
-        [str(dbt_executable), "build", "--project-dir", str(TRANSFORM_DIR), "--profiles-dir", str(TRANSFORM_DIR)],
+        [*dbt_command, "--full-refresh"],
         check=True,
         env=environment,
     )

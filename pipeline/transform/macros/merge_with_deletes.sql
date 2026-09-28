@@ -58,7 +58,7 @@
                     verwijderd,
                     ROW_NUMBER() OVER (
                         PARTITION BY {{ deletion_key }}
-                        ORDER BY feed_updated DESC, bijgewerkt DESC, _dlt_id DESC
+                        ORDER BY bijgewerkt DESC NULLS LAST, feed_updated DESC NULLS LAST, _dlt_id DESC
                     ) AS version_number
                 FROM {{ deletion_relation }}
             ) AS latest
