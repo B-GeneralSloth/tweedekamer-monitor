@@ -16,6 +16,16 @@ WITH links AS (
     GROUP BY 1
 ),
 
+current_versions AS (
+    SELECT id
+    FROM {{ source('bronze', 'document_versie') }}
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY id
+        ORDER BY bijgewerkt DESC, feed_updated DESC, _dlt_id DESC
+    ) = 1
+       AND NOT verwijderd
+),
+
 latest AS (
     SELECT
         d.id,
@@ -52,14 +62,25 @@ latest AS (
 
 incoming AS (
     SELECT
-        latest.* EXCLUDE (verwijderd, kamerstukdossier_id),
-        CASE WHEN dossier.id IS NOT NULL THEN latest.kamerstukdossier_id END AS kamerstukdossier_id
+        latest.* EXCLUDE (verwijderd, kamerstukdossier_id, huidige_document_versie_id),
+        CASE WHEN dossier.id IS NOT NULL THEN latest.kamerstukdossier_id END AS kamerstukdossier_id,
+        CASE WHEN current_version.id IS NOT NULL THEN latest.huidige_document_versie_id END AS huidige_document_versie_id
     FROM latest
     LEFT JOIN {{ ref('kamerstukdossier') }} AS dossier
         ON latest.kamerstukdossier_id = dossier.id
+    LEFT JOIN current_versions AS current_version
+        ON latest.huidige_document_versie_id = current_version.id
     WHERE NOT latest.verwijderd
         {% if is_incremental() %}
-        AND latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
+        AND (
+            latest.api_gewijzigd_op > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
+            OR EXISTS (
+                SELECT 1
+                FROM {{ source('bronze', 'document_versie') }} AS version_change
+                WHERE version_change.id = latest.huidige_document_versie_id
+                  AND version_change.feed_updated > (SELECT MAX(api_gewijzigd_op) FROM {{ this }})
+            )
+        )
         {% endif %}
 )
 

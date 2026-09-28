@@ -1,8 +1,8 @@
 # Tweede Kamer Monitor
 
-An open-source data pipeline and dashboard for studying the work of the Dutch House of Representatives (Tweede Kamer).
+This repository contains an open-source data pipeline and dashboard for studying the work of the Dutch House of Representatives (Tweede Kamer).
 
-The pipeline can be found in the `pipeline/` folder and ingests the public Tweede Kamer Open Data feed into a local DuckDB database. The `eda/` folder contains Jupyter notebooks for exploring themes such as voting, documents, commitments, and parliamentary activity. The code for the dashboard can be found in the `app/` folder.
+The pipeline can be found in the `pipeline/` folder and ingests the public Tweede Kamer Open Data feed into a local DuckDB database and transforms the data into clean silver and gold tables. The `eda/` folder contains Jupyter notebooks for exploring themes such as voting, documents, commitments, and parliamentary activity. The code for the dashboard can be found in the `app/` folder.
 
 ## Quick start
 
@@ -28,7 +28,7 @@ Run the pipeline to ingest the live public feed and build the silver models:
 python pipeline/run_pipeline.py
 ```
 
-This can take some time (think hours) because it reads the entire feed. For a small test, limit ingestion:
+This can take some time (several hours) because it reads the entire feed. You can limit ingestion like this:
 
 ```bash
 python pipeline/run_pipeline.py --max-pages 2000
@@ -62,5 +62,9 @@ streamlit run app/app.py
 - `eda/` contains the exploratory Jupyter notebooks.
 - `utils/` contains helper SQL scripts.
 
-For the data architecture and layer descriptions, see [ARCHITECTURE.md](ARCHITECTURE.md). For contribution steps, see [CONTRIBUTING.md](CONTRIBUTING.md). This project is released under the [MIT License](LICENSE).
+For the data architecture and layer descriptions, see [ARCHITECTURE.md](ARCHITECTURE.md). For contribution steps, see [CONTRIBUTING.md](CONTRIBUTING.md). 
+
+## License
+
+This project is released under the [MIT License](LICENSE).
 

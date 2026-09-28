@@ -1,8 +1,14 @@
 # Contributing to Tweede Kamer Monitor
 
-This guide walks you through contributing with GitHub, Conda, the Streamlit dashboard, and the local DuckDB pipeline. The project uses `dlt` to load raw data into DuckDB and `dbt` to build the `silver` tables. Exploratory notebooks are in `eda/`.
+First off, thank you for taking the time to contribute!
 
-## 1. Fork and clone
+This project uses `dlt` to load raw data into a DuckDB database and `dbt` to build the `silver` and `gold` tables. Exploratory notebooks are in `eda/`. The dashboard is built using `Streamlit` and can be found in `app/`.
+
+## Getting Things Set Up
+
+1. Fork and clone
+
+Because you do not have direct edit access to this main repository, you need to make your own copy of it first.
 
 On [GitHub](https://github.com/afvanwoudenberg/tweedekamer-monitor), click **Fork** to create your own copy. Replace `YOUR-GITHUB-NAME` below with your GitHub username.
 
@@ -24,9 +30,9 @@ Connect your clone to the main project so you can get updates:
 git remote add upstream https://github.com/afvanwoudenberg/tweedekamer-monitor.git
 ```
 
-## 2. Create the Conda environment
+2. Create the Conda environment
 
-Install Miniforge or another Conda distribution if needed. From the project folder, create the environment defined in `environment.yml`:
+Install Conda if needed. From the project folder, create the environment defined in `environment.yml`:
 
 ```bash
 conda env create --file environment.yml
@@ -38,29 +44,27 @@ Activate it:
 conda activate tweedekamer_monitor
 ```
 
-If `environment.yml` changes later, update the environment:
+If `environment.yml` changes later, you can update the environment like this:
 
 ```bash
 conda env update --name tweedekamer_monitor --file environment.yml
 ```
 
-Activate it again in each new terminal:
+3. Configure notebook output cleaning
 
-```bash
-conda activate tweedekamer_monitor
-```
+Removing notebook outputs before staging `.ipynb` files keeps the version control history clean and prevents bloated repositories
 
-## 3. Configure notebook output cleaning
-
-Run this once in each clone, with the Conda environment active:
+The following command installs a local Git filter to handle this automatically. Run this once in each clone, with the Conda environment active:
 
 ```bash
 nbstripout --install --attributes .gitattributes
 ```
 
-This configures Git to remove notebook outputs when you stage `.ipynb` files. It does not clear outputs from the notebook open in Jupyter or VS Code.
+## Contributing
 
-## 4. Create a branch
+All contributions must be done on a seperate branch. Follow these steps for each contribution you make.
+
+1. Create a branch
 
 Update your local `main` from the main project:
 
@@ -86,35 +90,11 @@ git switch -c describe-your-change
 
 Use a short name that describes your work, for example `fix-notebook-query`.
 
-## 5. Work and test
+2. Make your contributions
 
-To run the dashboard from the repository root:
+Make sure all your contributions (feature implementations, bug fixes, etc) are saved into this branch. Stick to one contribution per branch.
 
-```bash
-streamlit run app/app.py
-```
-
-To open the exploratory notebooks:
-
-```bash
-jupyter lab
-```
-
-In VS Code, select the `tweedekamer_monitor` kernel if prompted. The notebooks use the local `tweedekamer.duckdb` database in the project folder. This database is ignored by Git.
-
-To run a small pipeline test using two feed pages:
-
-```bash
-python pipeline/run_pipeline.py --max-pages 2
-```
-
-To run the full pipeline, which reads the live public feed:
-
-```bash
-python pipeline/run_pipeline.py
-```
-
-## 6. Update your branch
+3. Update your branch
 
 Before opening a pull request, get the latest changes from the main project:
 
@@ -142,7 +122,7 @@ Merge the latest `main` into it:
 git merge main
 ```
 
-## 7. Commit and open a pull request
+4. Commit and open a pull request
 
 Check your changes:
 
@@ -154,6 +134,12 @@ Stage the files you changed. Replace the example path with the path to your file
 
 ```bash
 git add path/to/changed-file
+```
+
+To simply stage all files, do:
+
+```bash
+git add .
 ```
 
 Commit with a short description:

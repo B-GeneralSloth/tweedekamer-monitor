@@ -41,17 +41,17 @@ flowchart LR
         B --> S --> G
     end
 
-    GH["GitHub Releases\n📦 Parquet assets"]
+    PAR["📦 Parquet assets"]
     SC["Streamlit Community Cloud\n📊 Dashboard"]
     USER["🙍 General Public"]
     ANALYST["👩‍💻 Data Scientist"]
 
 
     API --> B
-    G --> GH
+    G --> PAR
         
     %% The dashboard is placed under the assets
-    GH -- "DuckDB SQL over Parquet" --> SC
+    PAR -- "DuckDB SQL over Parquet" --> SC
     
     %% The user is placed to the left of the dashboard
     USER -. "uses" .-> SC
@@ -84,7 +84,7 @@ The [`pipeline/run_pipeline.py`](pipeline/run_pipeline.py) script runs all inges
 
 ### Publication
 
-Parquet is the exchange format between the pipeline and the dashboard. Gold tables are exported as Parquet files, published through GitHub Releases, and queried by the Streamlit dashboard using DuckDB.
+Parquet is the exchange format between the pipeline and the dashboard. Gold tables are exported as Parquet files, and queried by the Streamlit dashboard using DuckDB.
 
 Each release replaces the previous assets. 
 
@@ -93,7 +93,7 @@ This arrangement provides several benefits:
 - Parquet is compact and columnar, so it works well for analytical scans.
 - Column pruning and compression limit the data read by dashboard queries.
 - The files work across Python, R, SQL engines, and local data tools.
-- GitHub Releases provide public distribution without requiring a database server.
+- Using Parquet files provide public distribution without requiring a database server.
 - The pipeline and the dashboard can be run independently.
 - DuckDB can run expressive SQL over Parquet inside the Streamlit process.
 

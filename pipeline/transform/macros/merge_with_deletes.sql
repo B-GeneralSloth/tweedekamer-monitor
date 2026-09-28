@@ -95,6 +95,32 @@
     {% set dependent_result = run_query(dependent_query) %}
     {% set dependent_deletes = [] %}
     {% if execute and dependent_result is not none %}
+        {% if target_relation.identifier == 'document' and deletion_relation != 'none' %}
+            {% set document_descendant_deletes %}
+                UPDATE {{ target_relation }}
+                SET huidige_document_versie_id = NULL
+                WHERE id IN (
+                    SELECT id FROM ({{ latest_deleted_sql }}) AS DBT_DELETED_DOCUMENTS
+                );
+                DELETE FROM {{ target_relation.schema }}.document_publicatie
+                WHERE document_versie_id IN (
+                    SELECT id
+                    FROM {{ target_relation.schema }}.document_versie
+                    WHERE document_id IN (
+                        SELECT id FROM ({{ latest_deleted_sql }}) AS DBT_DELETED_DOCUMENTS
+                    )
+                );
+                DELETE FROM {{ target_relation.schema }}.document_publicatie_metadata
+                WHERE document_versie_id IN (
+                    SELECT id
+                    FROM {{ target_relation.schema }}.document_versie
+                    WHERE document_id IN (
+                        SELECT id FROM ({{ latest_deleted_sql }}) AS DBT_DELETED_DOCUMENTS
+                    )
+                );
+            {% endset %}
+            {% do dependent_deletes.append(document_descendant_deletes) %}
+        {% endif %}
         {% for row in dependent_result.rows %}
             {% set child_schema = row[0] %}
             {% set child_table = row[1] %}
