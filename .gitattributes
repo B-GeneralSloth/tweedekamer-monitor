@@ -1,0 +1,5 @@
+# Strip notebook cell outputs and execution counts when Git stages notebooks.
+*.ipynb filter=nbstripout
+
+*.zpln filter=nbstripout
+*.ipynb diff=ipynb
