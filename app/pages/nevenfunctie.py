@@ -7,7 +7,7 @@ import altair as alt
 # ---------------------------------------------------------------------------
 # Aannames: pas deze namen aan als jouw CSV's of kolommen anders heten
 # ---------------------------------------------------------------------------
-DATA = Path(__file__).parent / "data"
+DATA = Path(__file__).resolve().parents[1] / "nevenfunctie" / "data"
  
 BESTAND_FEIT = "feit_inkomen.csv" 
 BESTAND_PERSOON = "dim_persoon.csv"
@@ -223,4 +223,3 @@ with st.expander("Over deze data"):
         "GroenLinks, de Partij van de Arbeid en Progressief Nederland zijn samengevoegd tot "
         "één fractie, omdat deze partijen gefuseerd zijn."
     )
-

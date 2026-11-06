@@ -84,6 +84,11 @@ pages = st.navigation(
                 title="Afwijkend stemgedrag",
                 icon=":material/how_to_vote:",
             ),
+            st.Page(
+                "pages/nevenfunctie.py",
+                title="Nevenfuncties en inkomsten",
+                icon=":material/work_history:",
+            ),
         ],
     }
 )
