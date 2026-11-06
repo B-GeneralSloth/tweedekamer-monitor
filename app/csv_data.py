@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-DATA_MAP = Path(__file__).resolve().parent.parent / "data"
+DATA_MAP = Path(__file__).resolve().parent / "data"
 
 
 @st.cache_data
