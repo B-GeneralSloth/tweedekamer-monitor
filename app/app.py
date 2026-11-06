@@ -68,6 +68,11 @@ pages = st.navigation(
             st.Page("pages/fracties.py", title="Fracties", icon=":material/groups:"),
             st.Page("pages/reizen.py", title="Reizen", icon=":material/flight:"),
             st.Page("pages/documentstroom.py", title="Documentstroom", icon=":material/description:"),
+            st.Page(
+                "pages/herkomst_kamerleden.py",
+                title="Herkomst en woonplaats",
+                icon=":material/map:",
+            ),
         ],
     }
 )
