@@ -9,6 +9,7 @@ dependencies:
   - jupyterlab
   - matplotlib
   - pandas
+  - plotly
   - pip:
     - dlt[duckdb]
     - duckdb<2  # erpl_odata is not available for DuckDB 2.x yet
