@@ -5,9 +5,11 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
+from pathlib import Path
 
-reis_df = pd.read_csv("C:/Users/maxma/Desktop/BI TK/tweedekamer-monitor/reizen_geschenken_dashboard/gold_fact_reis.csv")
-geschenk_df = pd.read_csv("C:/Users/maxma/Desktop/BI TK/tweedekamer-monitor/reizen_geschenken_dashboard/gold_fact_geschenk.csv")
+DATA_DIR = Path(__file__).resolve().parents[1] / "reizen_geschenken"
+reis_df = pd.read_csv(DATA_DIR / "gold_fact_reis.csv")
+geschenk_df = pd.read_csv(DATA_DIR / "gold_fact_geschenk.csv")
 
 # rijen met negatieve reisduren verwijderen
 reis_df = reis_df[reis_df.reisduur >= 0]
