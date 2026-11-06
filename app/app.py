@@ -79,6 +79,11 @@ pages = st.navigation(
             ),
             st.Page("pages/documentstroom.py", title="Documentstroom", icon=":material/description:"),
             st.Page("pages/herkomst_kamerleden.py", title="Herkomst en woonplaats", icon=":material/map:"),
+            st.Page(
+                "pages/tegen_de_stroom.py",
+                title="Afwijkend stemgedrag",
+                icon=":material/how_to_vote:",
+            ),
         ],
     }
 )

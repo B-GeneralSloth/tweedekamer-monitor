@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
-DATA = Path(__file__).parent / "data"
+DATA = Path(__file__).resolve().parents[1] / "data"
 
-st.set_page_config(page_title="Tweede Kamer Monitor", layout="wide")
+st.set_page_config(page_title="Afwijkend stemgedrag · Tweede Kamer Monitor", layout="wide")
 
 
 @st.cache_data
