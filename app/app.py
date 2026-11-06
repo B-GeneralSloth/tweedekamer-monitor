@@ -89,6 +89,8 @@ pages = st.navigation(
                 title="Nevenfuncties en inkomsten",
                 icon=":material/work_history:",
             ),
+            st.Page("pages/3_Bronvermelding_csv.py", title="Bronvermelding"),
+            st.Page("pages/2_Soorten_bronnen_en_publicatiesnelheid.py", title="Soorten bronnen en Publicatiesnelheid"),
         ],
     }
 )
